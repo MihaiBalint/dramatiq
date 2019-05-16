@@ -23,16 +23,17 @@ from contextlib import contextmanager
 
 
 class StreamablePipe:
-    """Wrap a multiprocessing.connection.PipeConnection so it can be
-    used with logging's StreamHandler.
+    """Wrap a multiprocessing.connection.Connection so it can be used
+    with logging's StreamHandler.
 
     Parameters:
-      pipe(multiprocessing.connection.PipeConnection): writable end of
-        the pipe to be used for transmitting child worker logging data
-        to parent.
+      pipe(multiprocessing.connection.Connection): writable end of the
+        pipe to be used for transmitting child worker logging data to
+        parent.
     """
 
-    def __init__(self, pipe):
+    def __init__(self, pipe, *, encoding="utf-8"):
+        self.encoding = encoding
         self.pipe = pipe
 
     def flush(self):
@@ -41,11 +42,11 @@ class StreamablePipe:
     def close(self):
         self.pipe.close()
 
-    def read(self):
-        return self.pipe.recv()
+    def read(self):  # pragma: no cover
+        raise NotImplementedError("StreamablePipes cannot be read from!")
 
     def write(self, s):
-        self.pipe.send(s)
+        self.pipe.send_bytes(s.encode(self.encoding, errors="replace"))
 
 
 def file_or_stderr(filename, *, mode="a", encoding="utf-8"):

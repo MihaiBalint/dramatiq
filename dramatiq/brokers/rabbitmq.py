@@ -36,6 +36,7 @@ DEAD_MESSAGE_TTL = 86400000 * 7
 #: The max number of times to attempt an enqueue operation in case of
 #: a connection error.
 MAX_ENQUEUE_ATTEMPTS = 6
+MAX_DECLARE_ATTEMPTS = 2
 
 
 class RabbitmqBroker(Broker):
@@ -65,22 +66,32 @@ class RabbitmqBroker(Broker):
         to this broker.
       max_priority(int): Configure the queues with x-max-priority to
         support priority queue in RabbitMQ itself
-      **parameters(dict): The (pika) connection parameters to use to
+      parameters(list[dict]): A sequence of (pika) connection parameters
+        to determine which Rabbit server(s) to connect to.
+      **kwargs(dict): The (pika) connection parameters to use to
         determine which Rabbit server to connect to.
 
     .. _ConnectionParameters: https://pika.readthedocs.io/en/0.12.0/modules/parameters.html
     """
 
-    def __init__(self, *, confirm_delivery=False, url=None, middleware=None, max_priority=None, **parameters):
+    def __init__(self, *, confirm_delivery=False, url=None, middleware=None, max_priority=None, parameters=None, **kwargs):
         super().__init__(middleware=middleware)
 
         if max_priority is not None and not (0 < max_priority <= 255):
             raise ValueError("max_priority must be a value between 0 and 255")
 
-        if url:
+        if url is not None:
+            if parameters is not None or kwargs:
+                raise RuntimeError("the 'url' argument cannot be used in conjunction with pika parameters")
+
             self.parameters = pika.URLParameters(url)
+        elif parameters is not None:
+            if kwargs:
+                raise RuntimeError("the 'parameters' argument cannot be used in conjunction with other pika parameters")
+
+            self.parameters = [pika.ConnectionParameters(**p) for p in parameters]
         else:
-            self.parameters = pika.ConnectionParameters(**parameters)
+            self.parameters = pika.ConnectionParameters(**kwargs)
 
         self.confirm_delivery = confirm_delivery
         self.max_priority = max_priority
@@ -180,26 +191,37 @@ class RabbitmqBroker(Broker):
           ConnectionClosed: If the underlying channel or connection
             has been closed.
         """
-        try:
-            if queue_name not in self.queues:
-                self.emit_before("declare_queue", queue_name)
-                self._declare_queue(queue_name)
-                self.queues.add(queue_name)
-                self.emit_after("declare_queue", queue_name)
+        attempts = 1
+        while True:
+            try:
+                if queue_name not in self.queues:
+                    self.emit_before("declare_queue", queue_name)
+                    self._declare_queue(queue_name)
+                    self.queues.add(queue_name)
+                    self.emit_after("declare_queue", queue_name)
 
-                delayed_name = dq_name(queue_name)
-                self._declare_dq_queue(queue_name)
-                self.delay_queues.add(delayed_name)
-                self.emit_after("declare_delay_queue", delayed_name)
+                    delayed_name = dq_name(queue_name)
+                    self._declare_dq_queue(queue_name)
+                    self.delay_queues.add(delayed_name)
+                    self.emit_after("declare_delay_queue", delayed_name)
 
-                self._declare_xq_queue(queue_name)
-        except (pika.exceptions.AMQPConnectionError,
-                pika.exceptions.AMQPChannelError) as e:  # pragma: no cover
-            # Delete the channel and the connection so that the next
-            # caller may initiate new ones of each.
-            del self.channel
-            del self.connection
-            raise ConnectionClosed(e) from None
+                    self._declare_xq_queue(queue_name)
+                break
+            except (pika.exceptions.AMQPConnectionError,
+                    pika.exceptions.AMQPChannelError) as e:  # pragma: no cover
+                # Delete the channel and the connection so that the next
+                # caller may initiate new ones of each.
+                del self.channel
+                del self.connection
+
+                attempts += 1
+                if attempts > MAX_DECLARE_ATTEMPTS:
+                    raise ConnectionClosed(e) from None
+
+                self.logger.debug(
+                    "Retrying declare due to closed connection. [%d/%d]",
+                    attempts, MAX_DECLARE_ATTEMPTS,
+                )
 
     def _build_queue_arguments(self, queue_name):
         arguments = {
@@ -259,7 +281,7 @@ class RabbitmqBroker(Broker):
             try:
                 self.logger.debug("Enqueueing message %r on queue %r.", message.message_id, queue_name)
                 self.emit_before("enqueue", message, delay)
-                self.channel.publish(
+                self.channel.basic_publish(
                     exchange="",
                     routing_key=queue_name,
                     body=message.encode(),

@@ -22,7 +22,8 @@ logging.getLogger("pika").setLevel(logging.WARN)
 
 random.seed(1337)
 
-CI = os.getenv("TRAVIS") == "true" or \
+CI = os.getenv("GITHUB_ACTION") or \
+    os.getenv("TRAVIS") == "true" or \
     os.getenv("APPVEYOR") == "true"
 
 
