@@ -9,6 +9,43 @@ All notable changes to this project will be documented in this file.
 `Unreleased`_
 -------------
 
+Added
+^^^^^
+
+* Generic actors can now be passed custom actor registires.  (`#223`_, `@jonathanlintott`_)
+
+
+Changed
+^^^^^^^
+
+* Uncaught exceptions within workers are now logged as errors rather
+  than warnings.  (`#221`_, `@th0th`_)
+
+.. _#221: https://github.com/Bogdanp/dramatiq/pull/221
+.. _#223: https://github.com/Bogdanp/dramatiq/pull/223
+.. _@jonathanlintott: https://github.com/jonathanlintott
+.. _@th0th: https://github.com/th0th
+
+
+`1.6.1`_ -- 2019-07-24
+----------------------
+
+Added
+^^^^^
+
+* |RabbitmqBroker| now supports multiple connection uris to be passed
+  in via its ``url`` parameter.  (`#216`_, `@wsantos`_)
+
+Changed
+^^^^^^^
+
+* Updated allowed version range for prometheus-client.  (`#219`_, `@robinro`_)
+
+.. _#216: https://github.com/Bogdanp/dramatiq/pull/216
+.. _#219: https://github.com/Bogdanp/dramatiq/pull/219
+.. _@robinro: https://github.com/robinro
+.. _@wsantos: https://github.com/wsantos
+
 
 `1.6.0`_ -- 2019-05-02
 ----------------------
@@ -698,7 +735,8 @@ Changed
 * Capped prefetch counts to 65k.
 
 
-.. _Unreleased: https://github.com/Bogdanp/dramatiq/compare/v1.6.0...HEAD
+.. _Unreleased: https://github.com/Bogdanp/dramatiq/compare/v1.6.1...HEAD
+.. _1.6.1: https://github.com/Bogdanp/dramatiq/compare/v1.6.0...v1.6.1
 .. _1.6.0: https://github.com/Bogdanp/dramatiq/compare/v1.5.0...v1.6.0
 .. _1.5.0: https://github.com/Bogdanp/dramatiq/compare/v1.4.3...v1.5.0
 .. _1.4.3: https://github.com/Bogdanp/dramatiq/compare/v1.4.2...v1.4.3

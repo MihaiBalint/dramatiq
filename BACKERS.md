@@ -15,3 +15,6 @@ consider
 ## Backers via Patreon
 
 * Joong Kun Lee
+* Nick Sweeting
+* Wolfgang Doll
+* John Cass
