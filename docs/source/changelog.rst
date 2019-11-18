@@ -12,8 +12,32 @@ All notable changes to this project will be documented in this file.
 Added
 ^^^^^
 
-* Generic actors can now be passed custom actor registires.  (`#223`_, `@jonathanlintott`_)
+* Support for running forking and running arbitrary functions
+  (so-called "fork functions").  (`#127`_, `#230`_)
+* The ``--fork-function`` flag.
 
+Changed
+^^^^^^^
+
+* The |Prometheus| middleware no longer depends on file locking to
+  start its exposition server.  Instead, it uses the new fork
+  functions functionality to start the server in a separate, unique
+  process.  The middleware no longer takes any parameters.  While this
+  would normally be a breaking change, it appears those parameters
+  were previously ignored anyway.  (`#127`_, `#230`_)
+
+.. _#127: https://github.com/Bogdanp/dramatiq/issues/127
+.. _#230: https://github.com/Bogdanp/dramatiq/pull/230
+
+
+`1.7.0`_ -- 2019-09-22
+----------------------
+
+Added
+^^^^^
+
+* Generic actors can now be passed custom actor registires.  (`#223`_, `@jonathanlintott`_)
+* ``--use-spawn`` command line argument.  (`#227`_, `#228`_, `@jrusso1020`_)
 
 Changed
 ^^^^^^^
@@ -23,7 +47,10 @@ Changed
 
 .. _#221: https://github.com/Bogdanp/dramatiq/pull/221
 .. _#223: https://github.com/Bogdanp/dramatiq/pull/223
+.. _#227: https://github.com/Bogdanp/dramatiq/pull/227
+.. _#228: https://github.com/Bogdanp/dramatiq/pull/228
 .. _@jonathanlintott: https://github.com/jonathanlintott
+.. _@jrusso1020: https://github.com/jrusso1020
 .. _@th0th: https://github.com/th0th
 
 
@@ -735,7 +762,8 @@ Changed
 * Capped prefetch counts to 65k.
 
 
-.. _Unreleased: https://github.com/Bogdanp/dramatiq/compare/v1.6.1...HEAD
+.. _Unreleased: https://github.com/Bogdanp/dramatiq/compare/v1.7.0...HEAD
+.. _1.7.0: https://github.com/Bogdanp/dramatiq/compare/v1.6.1...v1.7.0
 .. _1.6.1: https://github.com/Bogdanp/dramatiq/compare/v1.6.0...v1.6.1
 .. _1.6.0: https://github.com/Bogdanp/dramatiq/compare/v1.5.0...v1.6.0
 .. _1.5.0: https://github.com/Bogdanp/dramatiq/compare/v1.4.3...v1.5.0
